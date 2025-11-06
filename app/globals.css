@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #3A86FF;
+    --primary-rgb: 58 134 255;
+    --secondary: #ECC65D;
+    --secondary-rgb: 236 198 93;
+    --background: #0F1117;
+    --foreground: #C9D1D9;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .gradient-primary-to-secondary {
+    @apply bg-gradient-to-r from-[#3A86FF] via-[#2E5DC8] to-[#ECC65D];
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-[#3A86FF] text-white rounded-lg font-semibold hover:bg-[#2E5DC8] transition-colors;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 border-2 border-[#ECC65D] text-[#ECC65D] rounded-lg font-semibold hover:bg-[#ECC65D] hover:text-black transition-colors;
+  }
+
+  .card {
+    @apply bg-[#161B22] border border-[#30363D] rounded-lg p-6;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-[#3A86FF] to-[#ECC65D] bg-clip-text text-transparent;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-animation 3s ease infinite;
+  }
+
+  @keyframes gradient-animation {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
