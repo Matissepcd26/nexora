@@ -1,0 +1,203 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User model for NextAuth
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                 String    @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?   @db.Text
+  access_token       String?   @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?   @db.Text
+  session_state      String?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Business models
+model Client {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  postalCode    String?
+  country       String?
+  taxId         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  devis         Devis[]
+  factures      Facture[]
+}
+
+model Produit {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  price       Decimal   @db.Decimal(10, 2)
+  tva         Decimal   @default(0.20) @db.Decimal(5, 2)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  devisLignes DevisLigne[]
+  factureLignes FactureLigne[]
+}
+
+model Devis {
+  id            String       @id @default(cuid())
+  numero        String       @unique
+  clientId      String
+  client        Client       @relation(fields: [clientId], references: [id])
+  dateCreation  DateTime     @default(now())
+  dateValidite  DateTime?
+  status        DevisStatus  @default(BROUILLON)
+  montantHT     Decimal      @default(0) @db.Decimal(12, 2)
+  montantTVA    Decimal      @default(0) @db.Decimal(12, 2)
+  montantTTC    Decimal      @default(0) @db.Decimal(12, 2)
+  lignes        DevisLigne[]
+  facture       Facture?
+  notes         String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+enum DevisStatus {
+  BROUILLON
+  ENVOYE
+  VU
+  ACCEPTE
+  REFUSE
+  FACTURE
+}
+
+model DevisLigne {
+  id          String  @id @default(cuid())
+  devisId     String
+  devis       Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  produitId   String
+  produit     Produit @relation(fields: [produitId], references: [id])
+  quantite    Decimal @db.Decimal(10, 2)
+  prixUnitaire Decimal @db.Decimal(10, 2)
+  tva         Decimal @db.Decimal(5, 2)
+  montantHT   Decimal @db.Decimal(12, 2)
+  montantTTC  Decimal @db.Decimal(12, 2)
+}
+
+model Facture {
+  id            String       @id @default(cuid())
+  numero        String       @unique
+  devisId       String       @unique
+  devis         Devis        @relation(fields: [devisId], references: [id])
+  clientId      String
+  client        Client       @relation(fields: [clientId], references: [id])
+  dateFacture   DateTime     @default(now())
+  dateEcheance  DateTime?
+  status        FactureStatus @default(EN_ATTENTE)
+  montantHT     Decimal      @default(0) @db.Decimal(12, 2)
+  montantTVA    Decimal      @default(0) @db.Decimal(12, 2)
+  montantTTC    Decimal      @default(0) @db.Decimal(12, 2)
+  lignes        FactureLigne[]
+  paiements     Paiement[]
+  relances      Relance[]
+  notes         String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+enum FactureStatus {
+  EN_ATTENTE
+  PARTIELLEMENT_PAYEE
+  PAYEE
+  EN_RETARD
+}
+
+model FactureLigne {
+  id          String   @id @default(cuid())
+  factureId   String
+  facture     Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  produitId   String
+  produit     Produit  @relation(fields: [produitId], references: [id])
+  quantite    Decimal  @db.Decimal(10, 2)
+  prixUnitaire Decimal  @db.Decimal(10, 2)
+  tva         Decimal  @db.Decimal(5, 2)
+  montantHT   Decimal  @db.Decimal(12, 2)
+  montantTTC  Decimal  @db.Decimal(12, 2)
+}
+
+model Paiement {
+  id        String    @id @default(cuid())
+  factureId String
+  facture   Facture   @relation(fields: [factureId], references: [id])
+  montant   Decimal   @db.Decimal(12, 2)
+  datePaiement DateTime
+  reference String?
+  createdAt DateTime  @default(now())
+}
+
+model Relance {
+  id        String    @id @default(cuid())
+  factureId String
+  facture   Facture   @relation(fields: [factureId], references: [id])
+  type      RelanceType
+  dateRelance DateTime
+  createdAt DateTime  @default(now())
+}
+
+enum RelanceType {
+  J_MOINS_5
+  J_PLUS_3
+  J_PLUS_10
+}
+
+model Parametres {
+  id            String  @id @default(cuid())
+  nextDevisNumber Int    @default(1)
+  nextFactureNumber Int  @default(1)
+  tauxTVADefaut Decimal @default(0.20) @db.Decimal(5, 2)
+  devise        String  @default("EUR")
+}
